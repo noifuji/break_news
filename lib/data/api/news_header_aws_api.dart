@@ -4,6 +4,7 @@ import 'dart:convert';
 
 import 'package:break_news/data/api/news_header_api.dart';
 import 'package:break_news/model/news_header.dart';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../../exception/break_news_exception.dart';
@@ -24,6 +25,10 @@ class NewsHeaderAwsApi implements NewsHeaderApi {
         "$paramLimit=${limit.toString()}&"
         "$paramTime=${datetime.millisecondsSinceEpoch}&"
         "$paramNewer=${newer.toString()}";
+
+    if (kDebugMode) {
+      print(urlWithQuery);
+    }
 
     var response;
 

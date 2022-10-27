@@ -30,7 +30,11 @@ class RemoveUnnecessaryTagsUseCase {
           "home",
           "link",
           "relate",
-          "banner"
+          "banner",
+          "smartphone",
+          "suggest",
+          "header",
+          "menu_bar"
         ];
         bool hasNgClass = divBlackList.fold<bool>(false, (prev, e) {
           for (String className in element.classes) {
@@ -76,7 +80,7 @@ class RemoveUnnecessaryTagsUseCase {
       }
       var imgurKey = element.attributes["data-id"];
 
-      element.replaceWith(doc.createElement('''
+      element.replaceWith(doc.createElement("""
       <iframe 
         allowfullscreen="true"
         mozallowfullscreen="true"
@@ -88,7 +92,7 @@ class RemoveUnnecessaryTagsUseCase {
         style="height: 500px; width: 332px; margin: 10px 0px; padding: 0px;">
       </iframe>
 
-'''));
+"""));
     });
 
     return doc.outerHtml;

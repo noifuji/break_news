@@ -1,5 +1,6 @@
 import 'package:break_news/model/news_header.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../assets/constants.dart' as constants;
@@ -19,7 +20,6 @@ class NewsHeaderWidget extends StatefulWidget {
 class _NewsHeaderWidgetState extends State<NewsHeaderWidget> {
   @override
   Widget build(BuildContext context) {
-    print("build${widget.newsHeader.title}");
     if (widget.newsHeader.thumbnail != null) {
       return Container(
         margin: const EdgeInsets.symmetric(vertical: 2.0, horizontal: 5.0),

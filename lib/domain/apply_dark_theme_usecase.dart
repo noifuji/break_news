@@ -11,8 +11,11 @@ class ApplyDarkThemeUseCase {
         html{
           filter: invert(1) hue-rotate(180deg);
         }
-        img,iframe,span.breaknews-emoji{
+        img,video,iframe,span.breaknews-emoji{
         filter: invert(1) hue-rotate(180deg);
+        }
+        iframe{
+        width:100%
         }
         ''';
 

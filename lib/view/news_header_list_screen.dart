@@ -1,6 +1,7 @@
 import 'package:break_news/model/news_header.dart';
 import 'package:break_news/view/news_header_widget.dart';
 import 'package:break_news/viewmodel/news_header_viewmodel.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -16,87 +17,98 @@ class RequiredCardListScreen extends StatefulWidget {
 }
 
 class _RequiredCardListScreenState extends State<RequiredCardListScreen> {
+  late Future<void> latestHeaders;
+
+  @override
+  void initState() {
+    super.initState();
+    latestHeaders = Provider.of<NewsHeaderViewModel>(context, listen: false).getLatestHeaders();
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(
-        future: Provider.of<NewsHeaderViewModel>(context, listen: false)
-            .getLatestHeaders(),
+        future: latestHeaders,
         builder: (context, dataSnapshot) {
           if (dataSnapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           } else if (dataSnapshot.error != null) {
-            return const Text('エラー。再ロードしてね。',
-                style: TextStyle(
-                  fontFamily: constants.appFont,
-                ));
+            if (kDebugMode) {
+              print(dataSnapshot.error);
+            }
+            return Column(mainAxisAlignment: MainAxisAlignment.center, children: <Widget>[
+              Row(mainAxisAlignment: MainAxisAlignment.center,
+                  children: const [
+                Text('エラー。再ロードしてね。',
+                    style: TextStyle(
+                      fontFamily: constants.appFont,
+                    ))
+              ]),
+              Row(mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                TextButton(
+                  child: const Text('RELOAD'),
+                  onPressed: () {
+                    setState(() {
+                      latestHeaders = Provider.of<NewsHeaderViewModel>(context, listen: false)
+                          .getLatestHeaders();
+                    });
+                  },
+                )
+              ]),
+            ]);
           } else {
-            List<NewsHeader> newsHeaders =
-                Provider.of<NewsHeaderViewModel>(context).headers;
+            List<NewsHeader> newsHeaders = Provider.of<NewsHeaderViewModel>(context).headers;
 
-            List<NewsHeaderWidget> newsHeaderWidgets = newsHeaders
-                .map((e) => NewsHeaderWidget(newsHeader: e))
-                .toList();
+            List<NewsHeaderWidget> newsHeaderWidgets =
+                newsHeaders.map((e) => NewsHeaderWidget(newsHeader: e)).toList();
             return Column(
               mainAxisAlignment: MainAxisAlignment.start,
               children: <Widget>[
                 Expanded(
                   flex: 5,
-                  child: Column(children: <Widget>[
-                    Expanded(
-                        child: NotificationListener<ScrollNotification>(
-                            onNotification: (scrollNotification) {
-                              if (scrollNotification is ScrollEndNotification) {
-                                Provider.of<NewsHeaderViewModel>(context,
-                                        listen: false)
-                                    .getHeadersBefore(
-                                        newsHeaders[newsHeaders.length - 1]
-                                            .publishDateTime);
-                              }
+                  child: RefreshIndicator(
+                    onRefresh: () async {
+                      await Provider.of<NewsHeaderViewModel>(context, listen: false)
+                          .getLatestHeaders();
+                    },
+                    child: Column(children: <Widget>[
+                      Expanded(
+                          child: NotificationListener<ScrollNotification>(
+                        onNotification: (scrollNotification) {
+                          if (scrollNotification is ScrollEndNotification) {
+                            if (scrollNotification.metrics.maxScrollExtent ==
+                                scrollNotification.metrics.extentBefore) {
+                              Provider.of<NewsHeaderViewModel>(context, listen: false)
+                                  .getHeadersBefore();
+                            }
+                          }
 
-                              return false;
-                            },
-                            child: RefreshIndicator(
-                              onRefresh: () async {
-                                await Provider.of<NewsHeaderViewModel>(context,
-                                        listen: false)
-                                    .getLatestHeaders();
-                              },
-                              child: /*SingleChildScrollView(
-                                  physics:
-                                      const AlwaysScrollableScrollPhysics(),
-                                  child: Column(children: <Widget>[*/
-                                  ListView.builder(
-                                shrinkWrap: true,
-                                scrollDirection: Axis.vertical,
-                                itemCount: newsHeaderWidgets.length,
-                                itemBuilder: (BuildContext context,
-                                        int index) =>
-                                    GestureDetector(
-                                        child: newsHeaderWidgets[index],
-                                        onTap: () async {
-                                          Provider.of<NewsHeaderViewModel>(
-                                                  context,
-                                                  listen: false)
-                                              .selectHeader(newsHeaders[index]);
-                                          var page = await buildPageAsync();
-                                          Navigator.of(context).push(
-                                              _createRoute(
-                                                  context,
-                                                  page,
-                                                  Provider.of<
-                                                          NewsHeaderViewModel>(
-                                                      context,
-                                                      listen: false),
-                                                  Provider.of<
-                                                          NewsBodyViewModel>(
-                                                      context,
-                                                      listen: false)));
-                                        }),
-                              ),
-                              //]),
-                              //)
-                            ))),
-                  ]),
+                          return false;
+                        },
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          scrollDirection: Axis.vertical,
+                          itemCount: newsHeaderWidgets.length,
+                          itemBuilder: (BuildContext context, int index) => GestureDetector(
+                              child: newsHeaderWidgets[index],
+                              behavior: HitTestBehavior.translucent,
+                              onTap: () async {
+                                Provider.of<NewsHeaderViewModel>(context, listen: false)
+                                    .selectHeader(newsHeaders[index]);
+                                var page = await buildPageAsync();
+                                Navigator.of(context).push(_createRoute(
+                                    context,
+                                    page,
+                                    Provider.of<NewsHeaderViewModel>(context, listen: false),
+                                    Provider.of<NewsBodyViewModel>(context, listen: false)));
+                              }),
+                        ),
+                        //]),
+                        //)
+                      ))
+                    ]),
+                  ),
                 ),
               ],
             );
@@ -111,11 +123,7 @@ class _RequiredCardListScreenState extends State<RequiredCardListScreen> {
   }
 
   Route _createRoute(
-      BuildContext context,
-      Widget page,
-      NewsHeaderViewModel hvm,
-      NewsBodyViewModel bvm) {
-
+      BuildContext context, Widget page, NewsHeaderViewModel hvm, NewsBodyViewModel bvm) {
     return PageRouteBuilder(
       pageBuilder: (context, animation, secondaryAnimation) => MultiProvider(
         providers: [
@@ -124,19 +132,14 @@ class _RequiredCardListScreenState extends State<RequiredCardListScreen> {
         ],
         child: Scaffold(
           appBar: AppBar(
-            title: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                Text(hvm.selectedHeader!.title,
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 2,
-                    style: const TextStyle(
-                        fontFamily: constants.appFont, fontSize: 14)),
-                Text(hvm.selectedHeader!.siteTitle,
-                    style: const TextStyle(
-                        fontFamily: constants.appFont, fontSize: 10)),
-
-              ]),
+            title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(hvm.selectedHeader!.title,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 2,
+                  style: const TextStyle(fontFamily: constants.appFont, fontSize: 14)),
+              Text(hvm.selectedHeader!.siteTitle,
+                  style: const TextStyle(fontFamily: constants.appFont, fontSize: 10)),
+            ]),
           ),
           body: page,
         ),

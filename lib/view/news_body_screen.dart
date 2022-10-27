@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -35,14 +36,18 @@ class _NewsBodyScreenState extends State<NewsBodyScreen> {
     NewsHeader? selected =
         Provider.of<NewsHeaderViewModel>(context).selectedHeader;
 
-    print("start building NewsBodyScreen${DateTime.now().millisecondsSinceEpoch}");
+    if (kDebugMode) {
+      print("start building NewsBodyScreen${DateTime.now().millisecondsSinceEpoch}");
+    }
 
     return FutureBuilder(
         future: Provider.of<NewsBodyViewModel>(context, listen: false)
             .getBody(selected!.site.toString()),
         builder: (context, dataSnapshot) {
           if (dataSnapshot.connectionState == ConnectionState.waiting) {
-            print("start building progress      ${DateTime.now().millisecondsSinceEpoch}");
+            if (kDebugMode) {
+              print("start building progress      ${DateTime.now().millisecondsSinceEpoch}");
+            }
             return const Center(child: Text("LOADING...",style:  TextStyle(
                 fontFamily: constants.appFont, fontSize: 14)));
           } else if (dataSnapshot.error != null) {
@@ -52,7 +57,9 @@ class _NewsBodyScreenState extends State<NewsBodyScreen> {
                 ));
           } else {
             NewsBody news = Provider.of<NewsBodyViewModel>(context).bodies.last;
-            print("start building WebView       ${DateTime.now().millisecondsSinceEpoch}");
+            if (kDebugMode) {
+              print("start building WebView       ${DateTime.now().millisecondsSinceEpoch}");
+            }
             return WillPopScope(
                 child: WebView(
                   javascriptMode: JavascriptMode.unrestricted,
